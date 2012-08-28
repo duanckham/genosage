@@ -5,16 +5,7 @@
 class Core
 {	
 	# VARIABLE POLL
-	public $value;
-	public $config;
-	public $dispatcher;
-	# DATABASE OBJECT
-	public $db;
-	# DATA MODEL
-	public $m;
-	# DATE / TIME
-	public $date;
-	public $time;
+	private $_value;
 
 	#
 	# INIT
@@ -27,35 +18,25 @@ class Core
 		# SET THE GLOBAL VARIABLE
 		$this->load_define();
 
-		# LOAD CONFIG
-		$this->load_config();
-
 		# ROUTER ANALYZE	
 		if (in_array($from, array('CHANNEL', 'APP', 'PAGE'), TRUE))
 		{	
-			$this->dispatcher = $this->core('Router')->analyze();
+			$this->_dispatcher = $this->core('Router')->analyze();
 	
-			if (isset($this->dispatcher['parameter']))
+			if (isset($this->_dispatcher['parameter']))
 			{
-				foreach ($this->dispatcher['parameter'] as $key => $value) 
+				foreach ($this->_dispatcher['parameter'] as $key => $value) 
 				{
 					$this->v('v.'.$key, $value);
 				}
 			}			
-		}
-		
-		# PRACTICAL VARIABLE INIT
-		if ($from <> '')
-		{
-			$this->date = date('Y-m-d');
-			$this->time = date('H:i:s');
 		}
 	}
 
 	#
 	# START
 	#
-	public function start()
+	static function start()
 	{
 		# CREATE GENOSAGE
 		$genosage = new Core();
@@ -77,6 +58,13 @@ class Core
 			$php_self = $_SERVER['PHP_SELF'];
 			define('__SITE__', 'http://'.substr($http_host.$php_self, 0, strrpos($http_host.$php_self, '/')));
 
+			# DATA AND TIME
+			define('__DATE__', date('Y-m-d'));
+			define('__TIME__', date('H:i:s'));
+
+			# CLIENT IP
+			define('__CLIENT__', $_SERVER['REMOTE_ADDR']);
+
 			# __CORE__
 			define('__CONFIG__', './Config');
 
@@ -93,41 +81,33 @@ class Core
 			define('__CSS__', './Public/Css');
 			define('__IMG__', './Public/Img');
 		}		
-	}
+	}	
 
 	#
-	# LOAD_CONFIG
+	# READ CONFIG
 	#
-	public function load_config()
-	{		
-		if (!isset($this->config['router']))
-		{		
-			# OPEN CONFIG DIR
-			$config_dir = opendir(__CONFIG__);
-			$config_arr = array();
+	public function con($config_str)
+	{
+		if (strpos($config_str, '.'))
+		{
+			$config = explode('.', $config_str);
+			$config_name = strtolower($config[0]);
+			$config_file = 'Con'.ucfirst($config_name).'.php';
+			$config_key = strtoupper($config[1]);
 
-			# GET CONFIG FILE
-			while (($config_file = readdir($config_dir)) !== FALSE)
-			{
-				if (strstr($config_file, 'Con') && strstr($config_file, '.php'))
-				{
-					$config_file = strtolower($config_file);
-					$config_file = str_replace('con', '', $config_file);
-					$config_file = str_replace('.php', '', $config_file);
-					$config_arr[] = $config_file;
-				}
-			}
+			# READ CONFIG FILE
+			require __CONFIG__.'/'.$config_file;
 
-			# LOAD CONFIG DATA
-			for ($i=0; $i<count($config_arr); $i++)
-			{
-				# IMPORT CONFIG FILE
-				require __CONFIG__.'/Con'.ucfirst($config_arr[$i]).'.php';
-				# SAVE CONFIG
-				$config_arr_name = 'config_'.$config_arr[$i];
-				$this->config[$config_arr[$i]] = $$config_arr_name;
-			}
-		}		
+			$_config = $$config_name;
+			return $_config[$config_key];
+		}
+		else
+		{
+			$config_name = strtolower($config_str);
+			$config_file = 'Con'.ucfirst($config_name).'.php';
+			require __CONFIG__.'/'.$config_file;
+			return $$config_name;
+		}	
 	}
 
 	#
@@ -230,16 +210,6 @@ class Core
 
 		return $mod;
 	}
-	
-	#
-	# ORM
-	#
-	public function t($table)
-	{
-		$orm = $this->core('Orm')->load_table($table);
-				
-		return $orm;
-	}
 
 	#
 	# VARIABLE POLL
@@ -256,18 +226,20 @@ class Core
 			{
 				case 'c':
 					$_COOKIE[$name[1]] = $value;
-					setcookie($name[1], $value, time()+$this->config['core']['COOKIE_LIFE_TIME']);
+					setcookie($name[1], $value, time()+$this->con('CORE.COOKIE_LIFE_TIME'));
 					break;
 				case 's':
 					$_SESSION[$name[1]] = $value;
 					break;
 				case 'v':
-					$this->value[$name[1]] = $value;
+					$this->_value[$name[1]] = $value;
 					break;
 				default:
 					return FALSE;
 					break;
 			}
+
+			return TRUE;
 		}
 		
 		# READ VALUE
@@ -292,7 +264,14 @@ class Core
 					return array_key_exists($name[1], $_SESSION) ? $_SESSION[$name[1]] : FALSE;
 					break;
 				case 'v':
-					return array_key_exists($name[1], $this->value) ? $this->value[$name[1]] : FALSE;
+					if (is_array($this->_value))
+					{
+						return array_key_exists($name[1], $this->_value) ? $this->_value[$name[1]] : FALSE;
+					}
+					else
+					{
+						return FALSE;
+					}				
 					break;
 				default:
 					return FALSE;
@@ -308,7 +287,7 @@ class Core
 			array_key_exists($key, $_POST) ? $value = $_POST[$key] : $value;
 			array_key_exists($key, $_COOKIE) ? $value = $_COOKIE[$key] : $value;
 			array_key_exists($key, $_SESSION) ? $value = $_SESSION[$key] : $value;
-			array_key_exists($key, $this->value) ? $value = $this->value[$key] : $value;
+			array_key_exists($key, $this->_value) ? $value = $this->_value[$key] : $value;
 
 			return $value;
 		}

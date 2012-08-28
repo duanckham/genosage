@@ -9,20 +9,9 @@ class Json extends Core
 		parent::__construct('JSON');
 	}
 
-	public function encode($data, $info=NULL)
+	public function encode($data)
 	{
-		$_data['app'] = 'genosage';
-		$_data['data'] = $data;
-		
-		if (!empty($info) AND is_array($info))
-		{
-			foreach ($info as $key=>$value)
-			{
-				$_data[$key] = $value;
-			}
-		}
-		
-		return json_encode($_data);
+		return $this->format(json_encode($data));
 	}
 	
 	public function decode($json, $isload=FALSE)
@@ -34,5 +23,57 @@ class Json extends Core
 
 		return json_decode($json, TRUE);		
 	}
+
+	public function format($json)
+	{
+		$count = 0; 
+		$result = ''; 
+		$quote = FALSE; 
+		$ignore = FALSE; 
+		$tab = '    '; 
+		$newline = "\n"; 
+
+		for($i=0; $i<strlen($json); $i++) { 
+			$char = $json[$i]; 
+			
+			if ($ignore) 
+			{ 
+				$result .= $char; 
+				$ignore = FALSE; 
+			}
+			else
+			{
+				switch($char) 
+				{ 
+					case '{': 
+						$count++; 
+						$result .= $char.$newline.str_repeat($tab, $count); 
+						break; 
+					case '}': 
+						$count--; 
+						$result = trim($result).$newline.str_repeat($tab, $count).$char; 
+						break; 
+					case ',': 
+						$result .= $char.$newline.str_repeat($tab, $count); 
+						break; 
+					case '"': 
+						$quote = !$quote; 
+						$result .= $char; 
+						break; 
+					case '\\': 
+						if ($quote) 
+						{
+							$ignore = TRUE; 
+						}
+						$result .= $char; 
+						break; 
+					default: 
+						$result .= $char; 
+				} 
+			} 
+		} 
+
+		return $result;
+	} 
 }
 ?>

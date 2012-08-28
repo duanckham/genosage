@@ -40,7 +40,7 @@ class Cache extends Core
 				}	
 				break;
 			case 'db':
-				if(file_exists($cache_file) && (strtotime('now')-filemtime($cache_file)) < $this->config['core']['CACHE_SYN_TIME'])
+				if(file_exists($cache_file) && (strtotime('now')-filemtime($cache_file)) < $this->con('CORE.CACHE_SYN_TIME'))
 				{
 					return TRUE;
 				}
@@ -58,8 +58,8 @@ class Cache extends Core
 	# GET CACHE FILE PATH
 	public function cache_get($str)
 	{
-		$this->debug('cache_read');
-		$this->debug('cache', 'R '.$this->hash(basename($str)).'.cache');
+		$this->debug('CACHE:READ');
+		$this->debug('CACHE', 'R '.$this->hash(basename($str)).'.cache');
 		
 		$feature = substr($str, 0, 6);
 		if (in_array(strtolower($feature), array('select', 'update', 'insert', 'delete', 'fields'), true))
@@ -96,8 +96,8 @@ class Cache extends Core
 		# WRITE CACHE
 		file_put_contents($cache_file, $content);
 		# DEBUG
-		$this->debug('cache_write');
-		$this->debug('cache', 'W '.$hash.'.'.$ext);
+		$this->debug('CACHE:WRITE');
+		$this->debug('CACHE', 'W '.$hash.'.'.$ext);
 	}
 }
 ?>

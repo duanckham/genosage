@@ -46,5 +46,11 @@ class App extends Core
 	{
 		return $this->page->create($data_count);
 	}
+
+	# UPLOAD
+	public function upload($field = FALSE)
+	{
+		return $this->upload->upload($field);
+	}
 }
 ?>

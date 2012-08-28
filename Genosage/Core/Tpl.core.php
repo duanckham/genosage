@@ -77,6 +77,11 @@ class Tpl extends Core
 		{			
 			for ($i=0; $i<count($tpl_file[0]); $i++)
 			{
+				if(!is_readable(__V__.'/'.$tpl_file[1][$i]))
+				{
+					$this->error('READ_TPL_ERROR:'.$tpl_file[1][$i]);
+				}
+
 				$tpl_content = file_get_contents(__V__.'/'.$tpl_file[1][$i]);					
 				$this->template = str_replace($tpl_file[0][$i], $tpl_content, $this->template);
 			}			
@@ -105,38 +110,38 @@ class Tpl extends Core
 	#
 	private function parse_var()
 	{
-		$patten = "/\{\\$([a-zA-Z0-9_]{1,})\}/";
+		$patten = '/\{\\$([a-zA-Z0-9_]{1,})\}/';
 		if(strpos($this->template, '{$') !== FALSE)
 		{
-			$this->template = preg_replace($patten, "<?php echo \$this->vars['$1']; ?>", $this->template);
+			$this->template = preg_replace($patten, '<?php echo $this->vars[\'$1\']; ?>', $this->template);
 		}
 		return TRUE;
 	}
 	
 	# USE:
-	# {if tset:='a'}<p>test is a</p>{/if}
+	# {if test=='a'}<p>test is a</p>{/if}
 	#
 	private function parse_if()
 	{
-		if(preg_match("/\{\s*if/", $this->template))
+		if(preg_match('/\{\s*if/', $this->template))
 		{
 			if(preg_match('/\{\s*\/if\s*\}/', $this->template)) 
 			{
-				$if_patten = "/\{\s*if\s+([^}]+)\}/";
-				$ef_patten = "/\{\s*\/if\s*\}/";
+				$if_patten = '/\{\s*if\s+([^}]+)\}/';
+				$ef_patten = '/\{\s*\/if\s*\}/';
 				
 				preg_match_all($if_patten, $this->template, $result, PREG_OFFSET_CAPTURE, 3);
 				
 				$if_code = array();			
 				for ($i=0; $i<count($result[1]); $i++)
 				{
-					$if_temp = explode(":=", $result[1][$i][0]);
-					$if_code[$i]['tag'] = '[IF:'.$if_temp[0].':='.$if_temp[1].']';
-					$if_code[$i]['code'] = "<?php if (\$this->vars['".$if_temp[0]."'] == ".$if_temp[1].'): ?>';
+					$if_temp = explode('==', $result[1][$i][0]);
+					$if_code[$i]['tag'] = '[IF:'.$if_temp[0].'=='.$if_temp[1].']';
+					$if_code[$i]['code'] = '<?php if ($this->vars[\''.$if_temp[0].'\'] == '.$if_temp[1].'): ?>';
 				}
 				
 				$this->template = preg_replace($if_patten, '[IF:$1]', $this->template);
-				$this->template = preg_replace($ef_patten, "<?php endif; ?>", $this->template);
+				$this->template = preg_replace($ef_patten, '<?php endif; ?>', $this->template);
 				
 				for ($i=0; $i<count($if_code); $i++)
 				{
@@ -156,10 +161,10 @@ class Tpl extends Core
 	#
 	private function parse_common() 
 	{
-		$patten = "/\{#\}([^{]*)\{#\}/";
+		$patten = '/\{#\}([^{]*)\{#\}/';
 		if(strpos($this->template, '{#}') !== FALSE) 
 		{
-			$this->template = preg_replace($patten, "<?php /* $1 */ ?>", $this->template);
+			$this->template = preg_replace($patten, '<?php /* $1 */ ?>', $this->template);
 		}
 		return TRUE;
 	}
@@ -171,19 +176,19 @@ class Tpl extends Core
 	#
 	private function parse_foreach()
 	{
-		if(preg_match("/\{\s*\\$[0-9a-zA-Z_]+\s*->\s*for/", $this->template)) 
+		if(preg_match('/\{\s*\\$[0-9a-zA-Z_]+\s*->\s*for/', $this->template)) 
 		{
-			if(preg_match("/{\s*\/for\s*}/", $this->template)) 
+			if(preg_match('/{\s*\/for\s*}/', $this->template)) 
 			{
-				if(preg_match("/\{\s*@[\w\[\]\']+/", $this->template)) 
+				if(preg_match('/\{\s*@[\w\[\]\']+/', $this->template)) 
 				{
-					$k_and_v_patten = "/\{\s*@([\w\[\]\'\"]+)\s*\}/";
-					$this->template = preg_replace($k_and_v_patten, "<?php echo \$$1; ?>", $this->template);
+					$k_and_v_patten = '/\{\s*@([\w\[\]\'\"]+)\s*\}/';
+					$this->template = preg_replace($k_and_v_patten, '<?php echo \$$1; ?>', $this->template);
 				}
-				$foreach_patten = "/\{\s*\\$([0-9a-zA-Z_]+)\s*->\s*for\(\s*([0-9a-zA-Z_]+)\s*,\s*([0-9a-zA-Z_]+)\s*\)\s*\}/";
-				$end_foreach_patten = "/\{\s*\/for\s*\}/";
-				$this->template = preg_replace($foreach_patten, "<?php foreach(\$this->vars['$1'] as \$$2 => \$$3): ?>", $this->template);
-				$this->template = preg_replace($end_foreach_patten, "<?php endforeach; ?>", $this->template);
+				$foreach_patten = '/\{\s*\\$([0-9a-zA-Z_]+)\s*->\s*for\(\s*([0-9a-zA-Z_]+)\s*,\s*([0-9a-zA-Z_]+)\s*\)\s*\}/';
+				$end_foreach_patten = '/\{\s*\/for\s*\}/';
+				$this->template = preg_replace($foreach_patten, '<?php foreach(\$this->vars[\'$1\'] as \$$2 => \$$3): ?>', $this->template);
+				$this->template = preg_replace($end_foreach_patten, '<?php endforeach; ?>', $this->template);
 			} 
 			else
 			{
@@ -197,7 +202,7 @@ class Tpl extends Core
 	#
 	private function parse_include() 
 	{
-		if(preg_match("/\{\s*include \"([^}]*)\"\s*\}/", $this->template, $file)) 
+		if(preg_match('/\{\s*include \"([^}]*)\"\s*\}/', $this->template, $file)) 
 		{
 			if(trim($file[1]) == '')
 			{

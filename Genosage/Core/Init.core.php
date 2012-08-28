@@ -1,7 +1,7 @@
 <?php
 class Init extends Core
 {
-	public function genosage()
+	static function genosage()
 	{
 		# CHECK THE INIT STATUS
 		if (is_dir('./App') AND is_dir('./Config') AND is_dir('./Cache'))
@@ -21,10 +21,10 @@ class Init extends Core
 		}
 		
 		# > CONFIG FILE
-		$sys_config_files['core'] = gzinflate(base64_decode('4+VSSc7PS8tMj0/OL0pVsFVILCpKrNTQtObl4kWRilYPDXBxDHGND/H0dVWPBapUMjIwNDIwNzRSskZX6uzv7+3pGu/j6Yak3sLMxMAAU6mjs4drfHCkH0KhMUgVAA=='));
-		$sys_config_files['router'] = gzinflate(base64_decode('4+VSSc7PS8tMjy/KLy1JLVKwVUgsKkqs1NC05uXiRZOMVtdSj4Wr4OXiBPIVbO0U1D3zUlIr9MGkOi8XSCsA'));
-		$sys_config_files['auth'] = gzinflate(base64_decode('ddDLCsIwEAXQtYH8QxZCdKfrUiFCqWJtSh8rkRA0xqImJUkR/15tC6KY7dwzMHMhGB+0OtWS8dadUYi4MfwxmQYQwK9oh0lVrhhN8f6lZsHftKSbKGUp2UadwlIobbkUzOmLUNizRJbJ4FsrjEdVRZR/kOI34YEZKYoeNtzauzZHD4xzWmXDnUa3jYclNF73T+OrlnX3xS90wrqO9O1BMOpHKFygOQTvNp8='));
-		$sys_config_files['database'] = gzinflate(base64_decode('4+VSSc7PS8tMj09JLElMSixOVbBVSCwqSqzU0LTm5eLFkI5Wd3GK9/APDlGPBapUNzQy1zMAQkMrY2MDM3VrHBr8HH1dIRrSU/PyixPTU3EqDQ12DYIoLcrPL8GpLMAxOBiiDLeSIFc3zwiIopJ4kDIA'));
+		$sys_config_files['auth'] = gzinflate(base64_decode('4+VSSSwtyVCwVUgsKkqs1NC05uXihYhFqzuGhnjE+/upxwKlDaxRhUP8vV394v0cfV3B0urpqXn5xYnpqfEl+dmpeeroqh2dfKAKQ4tTi9ClQ4NdgyCypUDZvMTcVHQVAY7BwRAVBYnFxeX5RSnoKtyD/EMDoG4pyi8tQJf38Xf3hHhFvTgzPS8T7Ea4Ei2wDCQMeLk4gXwFWzsFA14uUIAAAA=='));
+		$sys_config_files['core'] = gzinflate(base64_decode('4+VSSc4vSlWwVUgsKkqs1NC05uXihYhFq4cGuDiGuMaHePq6qscClagbGRgaGVgYWahbw9U4+/t7e7rG+3i6ISm0MDMxMEBS4+js4RofHOmHUGGMkHVxdQp1j/cMgFhhaGSuZwCEhurWCsoKocGuCho6mgoh/grBrgGOQUDnuPByAQA='));
+		$sys_config_files['database'] = gzinflate(base64_decode('4+VSSUksSUxKLE5VsFVILCpKrNTQtObl4kWIR6u7OMV7+AeHqMcClagbGpnrGQChoZWxsYGZujW6Sj9HX1eIyvTUvPzixPRUTDWhwa5BEDVF+fklmPIBjsHBEHksckGubp4RUBvyitPjQUoA'));
+		$sys_config_files['router'] = gzinflate(base64_decode('4+VSKcovLUktUrBVSCwqSqzU0LTm5eKFiUarZ+alpFaox8Klebk41bXUFWztFNQ9QVL6EAW8XCB9cF1axOoAAA=='));
 
 		file_put_contents('./Config/ConCore.php', '<?php'.$sys_config_files['core'].'?>');
 		file_put_contents('./Config/ConRouter.php', '<?php'.$sys_config_files['router'].'?>');

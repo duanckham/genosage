@@ -1,21 +1,21 @@
 <?php
 class Sql extends Core
 {
-	private $dbhost;
-	private $dbname;
-	private $dbuser;
-	private $dbpass;
-	private $dbprefix;
-	private $cache;
-	private $status;
+	private $_dbhost;
+	private $_dbname;
+	private $_dbuser;
+	private $_dbpass;
+	private $_dbprefix;
+	private $_cache;
+	private $_status;
 	private $_sql;
 	private $_to;
 	private $_field;
-	private $_fields;
 	private $_select;
 	private $_update;
 	private $_insert;
 	private $_where;
+	private $_in;
 	private $_limit;
 	private $_order;
 	private $_result;
@@ -29,14 +29,14 @@ class Sql extends Core
 	{
 		parent::__construct('SQL');
 		
-		$this->status = FALSE;
-		$this->cache = $this->core('Cache');
+		$this->_status = FALSE;
+		$this->_cache = $this->core('Cache');
 		
-		$this->dbhost = $this->config['database']['DB_HOST'];
-		$this->dbname = $this->config['database']['DB_NAME'];
-		$this->dbuser = $this->config['database']['DB_USER'];
-		$this->dbpass = $this->config['database']['DB_PASS'];
-		$this->dbprefix = $this->config['database']['DB_PREFIX'];
+		$this->_dbhost = $this->con('DATABASE.DB_HOST');
+		$this->_dbname = $this->con('DATABASE.DB_NAME');
+		$this->_dbuser = $this->con('DATABASE.DB_USER');
+		$this->_dbpass = $this->con('DATABASE.DB_PASS');
+		$this->_dbprefix = $this->con('DATABASE.DB_PREFIX');
 	}
 
 	# DESTRUCT
@@ -50,9 +50,9 @@ class Sql extends Core
 	private function init()
 	{	
 		# CONN DATABASE SERVER
-		$this->_db_handle = mysql_connect($this->dbhost, $this->dbuser, $this->dbpass);
+		$this->_db_handle = mysql_connect($this->_dbhost, $this->_dbuser, $this->_dbpass);
 		# CONN DATABASE
-		mysql_select_db($this->dbname, $this->_db_handle);
+		mysql_select_db($this->_dbname, $this->_db_handle);
 		# SET CHARSET
 		mysql_query('SET NAMES UTF8');
 		# CHECK CONN RESULT
@@ -61,7 +61,7 @@ class Sql extends Core
 			$this->error('DB_CONNECT_ERROR');
 		}
 		# 
-		$this->status = TRUE;
+		$this->_status = TRUE;
 	}
 	
 	# BUILD SQL
@@ -70,7 +70,8 @@ class Sql extends Core
 		$this->_sql  = '';
 		$this->_sql .= isset($this->_select)?'SELECT '.$this->_select:'';
 		$this->_sql .= isset($this->_to)?' FROM '.$this->_to:'';
-		$this->_sql .= isset($this->_where)?' WHERE '.$this->_where:'';	
+		$this->_sql .= isset($this->_where)?' WHERE '.$this->_where:'';
+		$this->_sql .= isset($this->_in)?' WHERE '.$this->_in:'';
 		$this->_sql .= isset($this->_order)?' ORDER BY '.$this->_order:'';
 		$this->_sql .= isset($this->_limit)?' LIMIT '.$this->_limit:'';
 		return;
@@ -104,9 +105,6 @@ class Sql extends Core
 				
 		if ($args_count > 1)
 		{	
-			# ' => "
-			$sql = str_replace('"', '\'', $sql);
-				
 			for ($i=1; $i<$args_count; $i++)
 			{
 				$_arg = func_get_arg($i);
@@ -116,18 +114,18 @@ class Sql extends Core
 		
 		# COMPILED
 		$sql = $this->compiled($sql);
-		
-		$this->debug('db', $sql);
-			
+		# DEBUG
+		$this->debug('DB', $sql);
+
 		# CHECK CACHE
-		if ($this->cache->cache_check($sql, 'db'))
+		if ($this->_cache->cache_check($sql, 'db'))
 		{		
 			$this->free();	
-			return $this->cache->cache_get($sql);
+			return $this->_cache->cache_get($sql);
 		}
 		
 		# INIT
-		if (!$this->status)
+		if (!$this->_status)
 		{
 			$this->init();
 		}
@@ -141,16 +139,16 @@ class Sql extends Core
 		# DEAL WITH RESULT
 		if (!$this->_query_handle)
 		{
-			$this->error('QIERY_SQL_ERROR:'.strtoupper($type).':'.$sql);
+			$this->error('QUERY_SQL_ERROR:'.strtoupper($type).':'.$sql);
 		}
 		else
 		{
 			switch ($type)
 			{
-				case 'select':
-					$this->_result = array();
-					if (mysql_num_rows($this->_query_handle)>0)
+				case 'select':			
+					if (mysql_num_rows($this->_query_handle) > 0)
 					{
+						$this->_result = array();
 						while ($row = mysql_fetch_assoc($this->_query_handle))
 						{
 							$this->_result[] = $row;
@@ -163,28 +161,28 @@ class Sql extends Core
 					}
 					
 					# WRITE CACHE
-					$this->cache->cache_save($sql, $this->_result, 'db');
+					$this->_cache->cache_save($sql, $this->_result, 'db');
 					# DEBUG
-					$this->debug('db_read');
+					$this->debug('DB:READ');
 																
 					break;
 				case 'update':
 					$this->_result = mysql_affected_rows($this->_db_handle);
 					# DEBUG
-					$this->debug('db_write');
+					$this->debug('DB:WRITE');
 					
 					break;
 				case 'insert':		
 					mysql_affected_rows($this->_db_handle);
 					$this->_result = mysql_insert_id();
 					# DEBUG
-					$this->debug('db_write');
+					$this->debug('DB:WRITE');
 					
 					break;
 				case 'delete':
 					$this->_result = mysql_affected_rows($this->_db_handle);
 					# DEBUG
-					$this->debug('db_write');
+					$this->debug('DB:WRITE');
 					
 					break;
 				default: break;
@@ -200,7 +198,7 @@ class Sql extends Core
 	public function to($to)
 	{
 		$this->free();	
-		$this->_to = strtolower($this->dbprefix.$to);
+		$this->_to = strtolower($this->_dbprefix.$to);
 		return $this;
 	}
 	
@@ -215,6 +213,24 @@ class Sql extends Core
 	public function where($where)
 	{
 		$this->_where = $where;
+		return $this;
+	}
+
+	# IN
+	public function in($in_key, $in_arr)
+	{
+		if (is_string($in_arr))
+		{
+			$this->_in = $in_key.' IN ('.$in_arr.')';
+		}
+		else if (is_string($in_arr[0]))
+		{
+			$this->_in = $in_key.' IN (\''.implode('\',\'', $in_arr).'\')';
+		}
+		else
+		{
+			$this->_in = $in_key.' IN ('.implode(',', $in_arr).')';
+		}
 		return $this;
 	}
 	
@@ -276,7 +292,11 @@ class Sql extends Core
 					continue;
 				}
 				
-				if (is_string($val))
+				if (is_null($val))
+				{
+					$temp .= '`'.$key.'`=NULL';
+				}
+				else if (is_string($val))
 				{					
 					$temp .= '`'.$key.'`=\''.$val.'\'';
 				}
@@ -315,7 +335,11 @@ class Sql extends Core
 			{
 				$temp_a .= '`'.$key.'`';
 				
-				if (is_string($val))
+				if (is_null($val))
+				{
+					$temp_b .= 'NULL';
+				}
+				else if (is_string($val))
 				{
 					$temp_b .= '\''.$val.'\'';
 				}
@@ -407,30 +431,48 @@ class Sql extends Core
 	public function fields($table)
 	{
 		# CHECK CACHE
-		if ($this->cache->cache_check('FIELDS:'.$table, 'db'))
+		if ($this->_cache->cache_check('FIELDS:'.$table, 'db'))
 		{
-			return $this->cache->cache_get('FIELDS:'.$table);
+			return $this->_cache->cache_get('FIELDS:'.$table);
 		}
 		
 		# INIT
-		if (!$this->status)
+		if (!$this->_status)
 		{
 			$this->init();
 		}
 		
 		# GET FIELDS
-		$fields = mysql_list_fields($this->dbname, $this->dbprefix.$table, $this->_db_handle);
-		$field_count = mysql_num_fields($fields); 
-	
-		for ($i=0; $i<$field_count; $i++) 
-		{ 
-			$this->_fields[] = mysql_field_name($fields, $i);
-		} 
-		
+		$this->_query_handle = mysql_query('DESCRIBE '.$this->_dbprefix.$table, $this->_db_handle);
+
+		if (!$this->_query_handle)
+		{
+			$this->_result = FALSE;
+		}
+		else
+		{
+			if (mysql_num_rows($this->_query_handle) > 0)
+			{
+				while ($row = mysql_fetch_assoc($this->_query_handle))
+				{
+					if ($row['Key'] == 'PRI')
+					{
+						$this->_result['PRIKEY'] = $row['Field'];
+					}
+					$this->_result[] = $row['Field'];
+				}
+				mysql_data_seek($this->_query_handle, 0);
+			}
+			else
+			{
+				$this->_result = FALSE;
+			}
+		}
+
 		# WRITE CACHE
-		$this->cache->cache_save('FIELDS:'.$table, $this->_fields, 'db');
-			
-		return $this->_fields;
+		$this->_cache->cache_save('FIELDS:'.$table, $this->_result, 'db');
+
+		return $this->_result;
 	}
 	
 	# FREE

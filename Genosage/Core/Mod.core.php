@@ -1,122 +1,170 @@
 <?php
-#
-#
-#
 class Mod extends Core
 {
-	public $data;
-	public $model_name;
-	public $table;
-	public $db;
-	public $result;
-
+	private $_data;
+	private $_items;
+	private $_table_name;
+	private $_table_fields;
+	private $_table_prikey;	
+	
 	#
 	# INIT
 	#
 	public function __construct()
 	{
 		parent::__construct('MOD');
+		$this->sql = $this->core('Sql');
 	}
 
+	#
+	# LOAD MODEL
+	#
 	public function load($model)
 	{
 		# INIT
-		$this->data = array();
-		$this->result = array();
-		$this->table = strtolower($model);
-		$this->db = $this->core('Sql');
-		$this->model_name = $model;
+		$this->_table_name = strtolower($model);
+		$this->_table_fields = $this->sql->fields($model);
+		$this->_table_prikey = $this->_table_fields['PRIKEY'];
+
+		return $this;
 	}
-	
+
+	#
+	# CREATE
+	#
+	public function create()
+	{
+		$obj = $this->m($this->_table_name);
+
+		for ($i=0; $i<count($this->_table_fields)-1; $i++)
+		{
+			$field_name = $this->_table_fields[$i];
+			$obj->$field_name = NULL;
+		}
+
+		return $obj;
+	}
+
+	#
 	# QUERY SQL
+	#
 	public function query($sql)
 	{
-		return $this->db->query($sql);
+		return $this->sql->query($sql);
 	}
-	
-	# AMOUNT OF DATA
-	public function count($condition=NULL)
+
+	#
+	# FIND OBJ BY PRIKEY OR OTHER FIELD
+	#
+	public function find($val, $field=NULL)
 	{
-		return $this->db->to($this->table)->select('*')->where($condition)->count();
-	}
-	
-	# FIND DATA
-	public function find($field='*', $condition=NULL, $from=NULL, $count=NULL, $order=NULL)
-	{
-		$this->result = $this->db->to($this->table)->select($field)->where($condition)->limit($from, $count)->order($order)->get();
-		return $this->result;
-	}
-	
-	# FIND THE FIRST DATA FROM RESULT
-	public function first($field='*', $condition=NULL)
-	{
-		$this->result = $this->db->to($this->table)->select($field)->where($condition)->limit(0,1)->get();
-		return $this->result;
-	}
-	
-	# FIND THE LAST DATA FROM RESULT
-	public function last($field='*', $condition=NULL)
-	{
-		$this->result = $this->db->to($this->table)->select($field)->where($condition)->get();
-		end($this->result);
-		return current($this->result);
-	}
-		
-	# READ DATA
-	public function read($field, $value)
-	{	
-		# GET CONDITION
-		if (is_int($value))
+		if (isset($field))
 		{
-			$condition = $field.'='.$value;
+			if (is_int($val))
+			{
+				$condition = $field.'='.$val;
+			}
+			else
+			{
+				$condition = $field.'=\''.$val.'\'';
+			}
+			
+			$this->_data = $this->sql->to($this->_table_name)->select()->where($condition)->get();
 		}
 		else
 		{
-			$condition = $field.'=\''.$value.'\'';
+			$this->_data = $this->sql->to($this->_table_name)->select()->where($this->_table_prikey.'='.$val)->get();
 		}
-		
-		$this->result = $this->db->to($this->table)->select('*')->where($condition)->get();
-		$this->data = $this->result[0];
-		return $this->data;
+
+		if ($this->_data)
+		{
+			if (count($this->_data) == 1)
+			{
+				foreach ($this->_data[0] as $key => $value)
+				{
+					$this->$key = $value;
+				}
+			}
+			
+			return $this;
+		}
+		else
+		{
+			return FALSE;
+		}
 	}
-	
+
+	#
 	# SAVE DATA
+	#
 	public function save($arr=NULL)
 	{
 		# GET DATA
 		if (isset($arr))
 		{
-			$this->data = $arr;
-		}
-		
-		# GET CONDITION
-		$_key = array_keys($this->data);
-		$_value = array_values($this->data);
-		
-		if (is_int($this->data[$_key[0]]))
-		{
-			$condition = $_key[0].'='.$_value[0];
+			if (count($this->_data) == 1)
+			{
+				return $this->sql->to($this->_table_name)->where($this->_table_prikey.'='.$this->_data[0][$this->_table_prikey])->update($arr);
+			}
+			else
+			{		
+				return $this->sql->to($this->_table_name)->insert($arr);
+			}
 		}
 		else
 		{
-			$condition = $_key[0].'=\''.$_value[0].'\'';
+			for ($i=0; $i<count($this->_table_fields)-1; $i++)
+			{
+				$field_name = $this->_table_fields[$i];
+				$arr[$this->_table_fields[$i]] = $this->$field_name;
+			}
+
+			if (count($this->_data) == 0)
+			{
+				return $this->sql->to($this->_table_name)->insert($arr);
+			}
+
+			if (count($this->_data) == 1)
+			{
+				return $this->sql->to($this->_table_name)->where($this->_table_prikey.'='.$arr[$this->_table_prikey])->update($arr);
+			}
 		}
-		
-		# UPDATE OR INSERT
-		if ($this->db->to($this->table)->where($condition)->exist())
-		{
-			return $this->db->to($this->table)->where($condition)->update($this->data);
-		}
-		else
-		{
-			return $this->db->to($this->table)->insert($this->data);
-		}		
 	}
 	
+	#
 	# DELETE DATA
-	public function delete($condition)
+	#
+	public function delete()
 	{
-		return $this->db->to($this->table)->where($condition)->delete();
+		return $this->sql->to($this->_table_name)->where($this->_table_prikey.'='.$this->_data[0][$this->_table_prikey])->delete();
+	}
+
+	#
+	# ITEM
+	#
+	public function item($id)
+	{
+		foreach ($this->_data[$id] as $key => $value)
+		{
+			$this->$key = $value;
+		}
+
+		return $this;
+	}
+
+	#
+	# DATA
+	#
+	public function data($id=NULL)
+	{
+		if (isset($id))
+		{
+			return $this->_data[$id];
+		}
+		else
+		{
+			return $this->_data;
+		}
 	}
 }
 ?>

@@ -10,6 +10,8 @@ class Auth extends Core
 	public function __construct()
 	{
 		parent::__construct('AUTH');
+
+		$this->auth_rules = $this->con('AUTH');
 	}
 
 	public function auth_check($app, $action)
@@ -23,15 +25,20 @@ class Auth extends Core
 		#
 		
 		# APP - ANYONE
-		if (!array_key_exists($app, $this->config['auth']))
+		if (!array_key_exists($app, $this->auth_rules))
 		{
 			return TRUE;
 		}
 		
 		# ACTION - ANYONE
-		if (!array_key_exists($action, $this->config['auth'][$app]))
+		if (!array_key_exists($action, $this->auth_rules[$app]))
 		{
-			return TRUE;
+			if (!array_key_exists('*', $this->auth_rules[$app]))
+			{
+				return TRUE;
+			}
+
+			$action = '*';
 		}
 		
 		#
@@ -45,7 +52,13 @@ class Auth extends Core
 	public function auth_get_token($app, $action)
 	{
 		# READ TOKEN STRING
-		$token_str = $this->v('c.'.$this->config['auth']['AUTH_TOKEN_NAME']);
+		$token_str = $this->v('c.'.$this->auth_rules['AUTH_TOKEN_NAME']);
+		
+		# GROUP 0
+		if ($this->auth_rules[$app][$action] == 0)
+		{
+			return TRUE;
+		}
 		
 		# NOT LOGIN
 		if (!$token_str)
@@ -58,10 +71,11 @@ class Auth extends Core
 		
 		# GET HASH
 		$this->auth_token_hash((int)$token_info[0]);
-		
-		if ($token_info[1] == $this->token_hash)
+
+		# CHECK GROUP
+		if ($token_info[1] === $this->token_hash)
 		{
-			if ($this->user_info[$this->config['auth']['AUTH_GROUP']] < $this->config['auth'][$app][$action])
+			if ($this->user_info[$this->auth_rules['AUTH_GROUP']] < $this->auth_rules[$app][$action])
 			{
 				return FALSE;
 			}
@@ -78,13 +92,13 @@ class Auth extends Core
 	
 	public function auth_put($id)
 	{
-		$this->v('c.'.$this->config['auth']['AUTH_TOKEN_NAME'], $id.':'.$this->auth_token_hash($id));
+		$this->v('c.'.$this->auth_rules['AUTH_TOKEN_NAME'], $id.':'.$this->auth_token_hash($id));
 	}
 	
 	public function auth_token_hash($id)
 	{
 		# GET USER INFO
-		$user_info = $this->m($this->config['auth']['AUTH_TABLE'])->read('id', $id);
+		$user_info = $this->m($this->auth_rules['AUTH_TABLE'])->find($id)->data(0);
 		
 		# SAVE USER INFO
 		$this->user_info = $user_info;
@@ -93,11 +107,11 @@ class Auth extends Core
 		if ($user_info)
 		{
 			$user_str = $id;
-			$user_str .= ':'.$user_info[$this->config['auth']['AUTH_USER']];
-			$user_str .= ':'.$user_info[$this->config['auth']['AUTH_PASS']];
-			$user_str .= ':'.$user_info[$this->config['auth']['AUTH_GROUP']];
-			$user_str .= ':'.date('Ymd');
-			$user_str .= ':'.$this->auth_get_ip();
+			$user_str .= ':'.$user_info[$this->auth_rules['AUTH_USER']];
+			$user_str .= ':'.$user_info[$this->auth_rules['AUTH_PASS']];
+			$user_str .= ':'.$user_info[$this->auth_rules['AUTH_GROUP']];
+			$user_str .= ':'.__DATE__;
+			$user_str .= ':'.__CLIENT__;
 		
 			$this->token_hash = $this->hash($user_str);
 		}
@@ -109,32 +123,10 @@ class Auth extends Core
 		return $this->token_hash;
 	}
 		
-	public function auth_get_ip()
-	{
-		if (!empty($_SERVER['HTTP_CLIENT_IP']))
-		{
-			$ip = $_SERVER['HTTP_CLIENT_IP'];
-		}
-   		else if (!empty($_SERVER['HTTP_X_FORWARDED_FOR']))
-   		{
-   			$ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
-   		}
-		else if(!empty($_SERVER['REMOTE_ADDR'])) 
-		{
-			$ip = $_SERVER['REMOTE_ADDR'];
-		}   			
-		else
-		{
-			$ip = '0.0.0.0';
-		}
-   			
-		return $ip;
-	}
-	
 	public function auth_user($key = NULL)
 	{
 		# READ TOKEN STRING
-		$token_str = $this->v('c.'.$this->config['auth']['AUTH_TOKEN_NAME']);
+		$token_str = $this->v('c.'.$this->auth_rules['AUTH_TOKEN_NAME']);
 		
 		# NOT LOGIN
 		if (!$token_str)
@@ -163,6 +155,11 @@ class Auth extends Core
 		{
 			return FALSE;
 		}
+	}
+
+	public function auth_destroy()
+	{
+		return $this->v('c.'.$this->auth_rules['AUTH_TOKEN_NAME'], '');
 	}
 }
 ?>

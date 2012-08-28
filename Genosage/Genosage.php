@@ -1,5 +1,5 @@
 <?php
-# error_reporting(0); 
+//error_reporting(0); 
 # SET OUTPUT ENCODE
 header('Content-Type: text/html; charset=UTF-8');
 # SET TIME ZONE
@@ -12,7 +12,6 @@ $debug_info = array();
 include_once('Core/Core.core.php');
 include_once('Core/Init.core.php');
 include_once('Core/Sql.core.php');
-include_once('Core/Orm.core.php');
 include_once('Core/App.core.php');
 include_once('Core/Mod.core.php');
 include_once('Core/Tpl.core.php');

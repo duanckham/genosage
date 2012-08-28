@@ -111,7 +111,7 @@ class Page extends Core
 	private function get_url()
 	{
 		# GET URL
-		$this->page_config['url'] = $this->dispatcher['url'];
+		$this->page_config['url'] = $this->_dispatcher['url'];
 	}
 	
 	# MAKE URL

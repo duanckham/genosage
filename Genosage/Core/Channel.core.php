@@ -14,28 +14,45 @@ class Channel extends Core
 		# IF DEBUG IS ON
 		if ($this->v('u.0') == 'debug')
 		{
-			$this->debug()->debug_start($this->dispatcher['app'], $this->dispatcher['method']);				
+			if (!in_array(__CLIENT__, explode(',', $this->con('CORE.DEBUG_IP'), true)))
+			{
+				$this->error("CLIENT_IP_CAN_NOT_DEBUG:".__CLIENT__);
+			}
+			else
+			{
+				$debug = TRUE;
+			}
+		}
+		else
+		{
+			$debug = FALSE;
+		}
+
+		# DEBUG
+		if ($debug)
+		{
+			$this->debug()->debug_start($this->_dispatcher['app'], $this->_dispatcher['method']);				
 		}
 		
 		# IF AUTH IS ON
-		if ($this->config['auth']['AUTH_ON'])
+		if ($this->con('AUTH.AUTH_ON'))
 		{
 			$auth = $this->core('Auth');
-			if (!$auth->auth_check($this->dispatcher['app'], $this->dispatcher['method']))
+			if (!$auth->auth_check($this->_dispatcher['app'], $this->_dispatcher['method']))
 			{
-				$this->redirect(__SITE__.'/?/'.$this->config['auth']['AUTH_LOGIN']);
+				$this->redirect(__SITE__.'/?/'.$this->con('AUTH.AUTH_LOGIN'));
 				return;
 			}
 		}
 			
 		# CREATE APP OBJECT
-		$action = $this->c($this->dispatcher['app']);
+		$action = $this->c($this->_dispatcher['app']);
 				
 		# CALL APP
-		call_user_func(array($action, $this->dispatcher['method']));
+		call_user_func(array($action, $this->_dispatcher['method']));
 			
 		# OUTPUT DEBUG INFO		
-		if ($this->v('u.0') == 'debug')
+		if ($debug)
 		{			
 			$this->debug()->debug_end();
 			$this->debug()->debug_output();			

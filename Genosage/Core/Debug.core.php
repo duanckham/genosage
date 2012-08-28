@@ -34,22 +34,22 @@ class Debug extends Core
 		global $debug_info;
 		switch ($type)
 		{
-			case 'cache_read':
+			case 'CACHE:READ':
 				$debug_info['times_cache_r']++;
 				break;
-			case 'cache_write':
+			case 'CACHE:WRITE':
 				$debug_info['times_cache_w']++;
 				break;
-			case 'db_read':
+			case 'DB:READ':
 				$debug_info['times_db_r']++;
 				break;
-			case 'db_write':
+			case 'DB:WRITE':
 				$debug_info['times_db_w']++;
 				break;
-			case 'cache':
+			case 'CACHE':
 				$debug_info['cache_log'][] = $log;
 				break;
-			case 'db':
+			case 'DB':
 				$debug_info['db_log'][] = $log;
 				break;	
 			default:
@@ -62,7 +62,7 @@ class Debug extends Core
 		global $debug_info;
 		print_r('<script type="text/javascript">');
 		print_r('console.log("Genosage Debug Info");');
-		print_r('console.log("Version: '.$this->config['core']['UPDATE_TIME'].'");');
+		print_r('console.log("Version: '.$this->con('CORE.UPDATE_TIME').'");');
 		print_r('console.log("Action: '.$debug_info['app'].'::'.$debug_info['action'].'");');
 		print_r('console.log("Time cost: '.number_format($debug_info['time_end'] - $debug_info['time_start'], 8).' S");');
 		print_r('console.log("Memory cost: '.$debug_info['mem_cost'].' KB");');
