@@ -68,12 +68,12 @@ class Debug extends Core
 		print_r('console.log("Memory cost: '.$debug_info['mem_cost'].' KB");');
 		print_r('console.log("Db read: '.$debug_info['times_db_r'].' Db Write: '.$debug_info['times_db_w'].'");');
 		print_r('console.log("Cache read: '.$debug_info['times_cache_r'].' Cache Write: '.$debug_info['times_cache_w'].'");');
-		print_r('console.log("Db query info:'.count($debug_info['db_log']).' Item(s)");');
+		print_r('console.log("Db query info: '.count($debug_info['db_log']).' Item(s)");');
 		for ($i=0; $i<count($debug_info['db_log']); $i++)
 		{
 			print_r('console.log("['.($i+1).'] '.$debug_info['db_log'][$i].'");');
 		}
-		print_r('console.log("Cache info:'.count($debug_info['cache_log']).' Item(s)");');
+		print_r('console.log("Cache info: '.count($debug_info['cache_log']).' Item(s)");');
 		for ($i=0; $i<count($debug_info['cache_log']); $i++)
 		{
 			print_r('console.log("['.($i+1).'] '.$debug_info['cache_log'][$i].'");');

@@ -1,5 +1,6 @@
 <?php
-//error_reporting(0); 
+# CLOSE ERROR DISPLAY
+error_reporting(0); 
 # SET OUTPUT ENCODE
 header('Content-Type: text/html; charset=UTF-8');
 # SET TIME ZONE

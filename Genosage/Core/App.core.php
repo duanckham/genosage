@@ -1,21 +1,40 @@
 <?php
 class App extends Core
 {
-	# TPL
-	public $tpl;
-	public $page = FALSE;
-
 	#
 	# INIT
 	#
 	public function __construct($name)
 	{
 		parent::__construct('APP');
+	}
 
-		$this->tpl = $this->core('Tpl');
-		$this->m = $this->m($name);
-		$this->auth = $this->core('Auth');
-		$this->upload = $this->core('Upload');
+	public function __get($property)
+	{
+		switch ($property)
+		{
+			case 'm':
+				// PHP 5.3+
+				$this->$property = $this->m(substr(get_called_class(), 3));
+				break;
+			case 'tpl':
+				$this->$property = $this->core('Tpl');
+				break;
+			case 'auth':
+				$this->$property = $this->core('Auth');
+				break;
+			case 'upload':
+				$this->$property = $this->core('Upload');
+				break;
+			case 'page':
+				$this->$property = FALSE;
+				break;
+			default:
+				$this->$property = FALSE;
+				break;
+		}
+
+		return $this->$property;
 	}
 
 	# TPL > ASSIGN
