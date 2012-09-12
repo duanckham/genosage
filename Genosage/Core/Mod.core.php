@@ -134,9 +134,43 @@ class Mod extends Core
 	#
 	# DELETE DATA
 	#
-	public function delete()
+	public function delete($val=NULL, $field=NULL)
 	{
-		return $this->sql->to($this->_table_name)->where($this->_table_prikey.'='.$this->_data[0][$this->_table_prikey])->delete();
+		if (isset($val) AND !isset($field))
+		{
+			if (is_int($val))
+			{
+				$condition = $this->_table_prikey.'='.$val;
+			}
+			else
+			{
+				$condition = $this->_table_prikey.'=\''.$val.'\'';
+			}
+		}
+		else if (isset($val) AND isset($field))
+		{
+			if (is_int($val))
+			{
+				$condition = $field.'='.$val;
+			}
+			else
+			{
+				$condition = $field.'=\''.$val.'\'';
+			}
+		}
+		else
+		{
+			if (is_int($this->_data[0][$this->_table_prikey]))
+			{
+				$condition = $this->_table_prikey.'='.$this->_data[0][$this->_table_prikey];
+			}
+			else
+			{
+				$condition = $this->_table_prikey.'=\''.$this->_data[0][$this->_table_prikey].'\'';
+			}
+		}
+
+		return $this->sql->to($this->_table_name)->where($condition)->delete();
 	}
 
 	#
